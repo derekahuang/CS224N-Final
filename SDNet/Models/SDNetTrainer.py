@@ -170,20 +170,21 @@ class SDNetTrainer(BaseTrainer):
         targets = []
         span_idx = int(context_len * context_len)
         for i in range(ground_truth.shape[0]):
-            if ground_truth[i][0] == -1 and ground_truth[i][1] == -1: # no answer
+            ground_truth_0 = np.asarray(ground_truth[i][0].cpu())
+            ground_truth_1 = np.asarray(ground_truth[i][1].cpu())
+            if ground_truth_0 == -1 and ground_truth_1 == -1: # no answer
                 targets.append(span_idx + 2)
-            if ground_truth[i][0] == 0 and ground_truth[i][1] == -1: # no
+            if ground_truth_0 == 0 and ground_truth_1 == -1: # no
                 targets.append(span_idx)
-            if ground_truth[i][0] == -1 and ground_truth[i][1] == 0: # yes
+            if ground_truth_0 == -1 and ground_truth_1 == 0: # yes
                 targets.append(span_idx + 1)
-            if ground_truth[i][0] != -1 and ground_truth[i][1] != -1: # normal span
-                targets.append(ground_truth[i][0] * context_len + ground_truth[i][1])
-
+            if ground_truth_0 != -1 and ground_truth_1 != -1: # normal span
+                targets.append(ground_truth_0 * context_len + ground_truth_1)
         targets = torch.LongTensor(np.array(targets))
         if self.use_cuda:
             targets = targets.cuda()
         loss = self.loss_func(scores, targets)
-        self.train_loss.update(loss.data[0], 1)
+        self.train_loss.update(loss.item(), 1)
         self.optimizer.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_norm(self.network.parameters(), self.opt['grad_clipping'])
