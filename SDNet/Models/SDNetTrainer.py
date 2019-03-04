@@ -83,8 +83,8 @@ class SDNetTrainer(BaseTrainer):
             self.log('Epoch {}'.format(epoch))
             self.network.train()
             startTime = datetime.now()
-            train_batches = BatchGen(self.opt, train_data['data'], self.use_cuda, self.vocab, self.char_vocab)
-            dev_batches = BatchGen(self.opt, dev_data['data'], self.use_cuda, self.vocab, self.char_vocab, evaluation=True)
+            train_batches = BatchGen(self.opt, train_data['data'], self.use_cuda, self.vocab, self.char_vocab, few_examples=True)
+            dev_batches = BatchGen(self.opt, dev_data['data'], self.use_cuda, self.vocab, self.char_vocab, evaluation=True, few_examples=True)
             for i, batch in enumerate(train_batches):
                 if i == len(train_batches) - 1 or (epoch == 0 and i == 0 and ('RESUME' in self.opt)) or (i > 0 and i % 1500 == 0):
                     print('Saving folder is', self.saveFolder)

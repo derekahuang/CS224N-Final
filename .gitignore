@@ -4,3 +4,6 @@ __pycache__
 .texpadtmp/
 data/
 save/
+SDNet/glove
+SDNet/squad/data
+SDNet/squad/bert-large-uncased

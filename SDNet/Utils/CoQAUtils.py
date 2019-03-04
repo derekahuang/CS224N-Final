@@ -102,7 +102,7 @@ def gen_upper_triangle(score_s, score_e, max_len, use_cuda):
     return expand_score.contiguous().view(batch_size, -1) # batch x (context_len * context_len)    
 
 class BatchGen:
-    def __init__(self, opt, data, use_cuda, vocab, char_vocab, evaluation=False):
+    def __init__(self, opt, data, use_cuda, vocab, char_vocab, evaluation=False, few_examples=False):
         # file_name = os.path.join(self.spacyDir, 'coqa-' + dataset_label + '-preprocessed.json')
 
         self.data = data
@@ -153,6 +153,12 @@ class BatchGen:
         if not evaluation:
             indices = list(range(len(self.data)))
             random.shuffle(indices)
+            self.data = [self.data[i] for i in indices]
+
+        # only take a few training examples for overfitting testing purposes
+        if few_examples:
+            indices = list(range(len(self.data)))
+            random.sample(indices, 20)
             self.data = [self.data[i] for i in indices]
 
     def __len__(self):
