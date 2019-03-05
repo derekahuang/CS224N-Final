@@ -227,6 +227,7 @@ class BatchGen:
             context_word_offsets = datum['raw_context_offsets']
             answer_strs = []
             turn_ids = []
+            data_ids = []
 
             x[0, :context_len] = torch.LongTensor(datum['annotated_context']['wordid'])
             if self.use_char_cnn:
@@ -240,6 +241,7 @@ class BatchGen:
             for i in range(qa_len):
                 x_features[i, :context_len, :4] = torch.Tensor(datum['qas'][i]['context_features'])
                 turn_ids.append(int(datum['qas'][i]['turn_id']))
+                data_ids.append(str(datum['qas'][i]['data_id']))
                 # query
                 p = 0
 
@@ -379,7 +381,7 @@ class BatchGen:
                 query_mask = Variable(query_mask)
                 ground_truth = Variable(ground_truth)
             yield(x, x_mask, x_char, x_char_mask, x_features, x_pos, x_ent, x_bert, x_bert_mask, x_bert_offsets, query, query_mask, query_char, query_char_mask,
-            query_bert, query_bert_mask, query_bert_offsets, ground_truth, context_str, context_words, context_word_offsets, answer_strs, context_id, turn_ids)
+            query_bert, query_bert_mask, query_bert_offsets, ground_truth, context_str, context_words, context_word_offsets, answer_strs, context_id, turn_ids, data_ids)
 
 #===========================================================================
 #=================== For standard evaluation in CoQA =======================

@@ -97,7 +97,9 @@ class CoQAPreprocess():
                 assert question['turn_id'] == answer['turn_id']
 
                 idx = question['turn_id']
+                data_id = question['data_id']
                 _qas = {'turn_id': idx,
+                        'data_id': data_id,
                         'question': question['input_text'],
                         'answer': answer['input_text']}
                 if idx in additional_answers:
