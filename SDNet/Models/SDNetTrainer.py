@@ -234,10 +234,10 @@ class SDNetTrainer(BaseTrainer):
                     predictions.append(context_str[st:ed])
             
             if best_id == context_len * context_len:
-                predictions.append('no')
+                predictions.append('unknown')
 
             if best_id == context_len * context_len + 1:
-                predictions.append('yes')
+                predictions.append('unknown')
 
             if best_id == context_len * context_len + 2:
                 predictions.append('unknown')
