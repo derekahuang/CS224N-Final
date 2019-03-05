@@ -6,7 +6,7 @@
 import json
 
 data = {'version': 0.2, 'data': []}
-with open('test.json', 'r') as f:
+with open('train.json', 'r') as f:
     squad = json.load(f)
 
 cnt = 0
@@ -22,7 +22,8 @@ for d in squad['data']:
         for qa in p['qas']:
             ques.append({
                     'input_text': qa['question'],
-                    'turn_id': turn_id
+                    'turn_id': turn_id, 
+                    'data_id': qa['id']
                 })
 
             if qa['is_impossible']:
@@ -58,5 +59,5 @@ for d in squad['data']:
         data['data'].append(a)
 
 
-with open('test_s2c.json', 'w') as output_file:
+with open('train_s2c.json', 'w') as output_file:
     json.dump(data, output_file, indent=4)
