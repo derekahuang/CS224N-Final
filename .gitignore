@@ -5,5 +5,7 @@ __pycache__
 data/
 save/
 SDNet/glove
+SDNet/squad/conf~
 SDNet/squad/data
 SDNet/squad/bert-large-uncased
+SDNet/squad/conf~

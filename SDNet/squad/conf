@@ -1,3 +1,6 @@
+SAVE_DIR	./save/
+SPLIT	dev
+SUB_FILE	submission.csv
 CoQA_TRAIN_FILE	data/train_s2c.json
 CoQA_DEV_FILE	data/test_s2c.json
 
