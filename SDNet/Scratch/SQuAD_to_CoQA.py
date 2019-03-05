@@ -22,7 +22,8 @@ for d in squad['data']:
         for qa in p['qas']:
             ques.append({
                     'input_text': qa['question'],
-                    'turn_id': turn_id
+                    'turn_id': turn_id,
+                    'data_id': qa['id']
                 })
 
             if qa['is_impossible']:
