@@ -46,6 +46,7 @@ class SDNetTrainer(BaseTrainer):
         predictions = []
         confidence = []
         final_json = []
+        submissions = {}
         cnt = 0
         for j, test_batch in enumerate(test_batches):
             cnt += 1
@@ -55,8 +56,9 @@ class SDNetTrainer(BaseTrainer):
             predictions.extend(phrase)
             confidence.extend(phrase_score)
             final_json.extend(pred_json)
+            submissions.extend(submission)
 
-        return predictions, confidence, final_json
+        return predictions, confidence, final_json, submissions
 
     def train(self): 
         self.isTrain = True
@@ -240,7 +242,7 @@ class SDNetTrainer(BaseTrainer):
                 ed = best_id % context_len
                 st = context_word_offsets[st][0]
                 ed = context_word_offsets[ed][1]
-                if(context_str[st:ed] == '.'):
+                if(context_str[st:ed] == '.' or context_str[st:ed] == ':'):
                     predictions.append('unknown')
                 else:
                     predictions.append(context_str[st:ed])

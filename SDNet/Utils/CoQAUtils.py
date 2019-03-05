@@ -217,7 +217,7 @@ class BatchGen:
 
             query = torch.LongTensor(batch_size, self.ques_max_len).fill_(0)
             query_char = torch.LongTensor(batch_size, self.ques_max_len, self.char_max_len).fill_(0)
-            query_bert_offsets = torch.LongTensor(batch_size, self.ques_max_len, 2).fill_(0)
+            query_bert_offsets = torch.LongTensor(batch_size, self.ques_max_len, 0).fill_(0)
             q_bert_list = []
             ground_truth = torch.LongTensor(batch_size, 2).fill_(-1)
 

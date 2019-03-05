@@ -3,9 +3,11 @@ SPLIT	dev
 SUB_FILE	submission.csv
 CoQA_TRAIN_FILE	data/train_s2c.json
 CoQA_DEV_FILE	data/test_s2c.json
+OFFICIAL_TEST_FILE      data/submission_test_s2c.json
+OFFICIAL
 
-PREV_ANS	0
-PREV_QUES	0
+PREV_ANS	2
+PREV_QUES	2
 
 DROPOUT	0.3
 my_dropout_p	0.3
