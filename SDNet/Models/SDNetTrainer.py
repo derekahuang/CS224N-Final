@@ -26,6 +26,7 @@ class SDNetTrainer(BaseTrainer):
         set_dropout_prob(0.0 if not 'DROPOUT' in opt else float(opt['DROPOUT']))
         self.seed = int(opt['SEED'])
         self.data_prefix = 'coqa-'
+        self.save_dir = str(opt['SAVE_DIR']) + str(opt['SPLIT']) + '_' + str(opt['SUB_FILE'])
         random.seed(self.seed)
         np.random.seed(self.seed)
         torch.manual_seed(self.seed)
@@ -217,6 +218,7 @@ class SDNetTrainer(BaseTrainer):
         confidence = []
         
         pred_json = []
+        submission_res = {}
         for i in range(batch_size):
             _, ids = torch.sort(prob[i, :], descending=True)
             idx = 0
@@ -247,6 +249,16 @@ class SDNetTrainer(BaseTrainer):
                 'turn_id': turn_ids[i],
                 'answer': predictions[-1]
             })
+
+            submission_res.update({: predictions[-1]})
+
+        sub_path = self.save_dir
+        log.info('Writing submission file to {}...'.format(sub_path))
+        with open(sub_path, 'w') as csv_fh:
+        csv_writer = csv.writer(csv_fh, delimiter=',')
+        csv_writer.writerow(['Id', 'Predicted'])
+        for uuid in sorted(sub_dict):
+            csv_writer.writerow([uuid, sub_dict[uuid]])
 
         return (predictions, confidence, pred_json) # list of strings, list of floats, list of jsons
 
