@@ -26,6 +26,8 @@ from torch.autograd import Variable
 POS = {w: i for i, w in enumerate([''] + list(nlp.tagger.labels))}
 ENT = {w: i for i, w in enumerate([''] + nlp.entity.move_names)}
 
+OVERFIT = False
+
 def build_embedding(embed_file, targ_vocab, wv_dim):
     vocab_size = len(targ_vocab)
     emb = np.random.uniform(-1, 1, (vocab_size, wv_dim))
@@ -102,7 +104,7 @@ def gen_upper_triangle(score_s, score_e, max_len, use_cuda):
     return expand_score.contiguous().view(batch_size, -1) # batch x (context_len * context_len)    
 
 class BatchGen:
-    def __init__(self, opt, data, use_cuda, vocab, char_vocab, evaluation=False, few_examples=False):
+    def __init__(self, opt, data, use_cuda, vocab, char_vocab, evaluation=False):
         # file_name = os.path.join(self.spacyDir, 'coqa-' + dataset_label + '-preprocessed.json')
 
         self.data = data
@@ -156,7 +158,7 @@ class BatchGen:
             self.data = [self.data[i] for i in indices]
 
         # only take a few training examples for overfitting testing purposes
-        if few_examples:
+        if OVERFIT:
             indices = list(range(len(self.data)))
             indices = indices[:20]
             self.data = [self.data[i] for i in indices]
