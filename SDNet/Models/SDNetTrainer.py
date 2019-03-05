@@ -228,7 +228,10 @@ class SDNetTrainer(BaseTrainer):
                 ed = best_id % context_len
                 st = context_word_offsets[st][0]
                 ed = context_word_offsets[ed][1]
-                predictions.append(context_str[st:ed])
+                if(context_str[st:ed] == '.'):
+                    predictions.append('unknown')
+                else:
+                    predictions.append(context_str[st:ed])
             
             if best_id == context_len * context_len:
                 predictions.append('no')
