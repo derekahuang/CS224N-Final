@@ -99,7 +99,7 @@ class SDNetTrainer(BaseTrainer):
                         final_json.extend(pred_json)
                         predictions.extend(phrase)
                         confidence.extend(phrase_score)
-                        dev_answer.extend(dev_batch[-3]) # answer_str
+                        dev_answer.extend(dev_batch[-4]) # answer_str
                     result, all_f1s = score(predictions, dev_answer, final_json)
                     f1 = result['f1']
 
@@ -156,7 +156,7 @@ class SDNetTrainer(BaseTrainer):
         self.network.drop_emb = True
 
         x, x_mask, x_char, x_char_mask, x_features, x_pos, x_ent, x_bert, x_bert_mask, x_bert_offsets, query, query_mask, \
-        query_char, query_char_mask, query_bert, query_bert_mask, query_bert_offsets, ground_truth, context_str, context_words, _, _, _, _ = batch
+        query_char, query_char_mask, query_bert, query_bert_mask, query_bert_offsets, ground_truth, context_str, context_words, _, _, _, _, _ = batch
 
         # Run forward
         # score_s, score_e: batch x context_word_num
@@ -201,7 +201,7 @@ class SDNetTrainer(BaseTrainer):
         # Run forward
         x, x_mask, x_char, x_char_mask, x_features, x_pos, x_ent, x_bert, x_bert_mask, x_bert_offsets, query, query_mask, \
         query_char, query_char_mask, query_bert, query_bert_mask, query_bert_offsets, ground_truth, context_str, context_words, \
-        context_word_offsets, answers, context_id, turn_ids = batch
+        context_word_offsets, answers, context_id, turn_ids, data_ids = batch
         
         context_len = len(context_words)
         score_s, score_e, score_yes, score_no, score_no_answer = self.network(x, x_mask, x_char, x_char_mask, x_features, x_pos, x_ent, x_bert, x_bert_mask, x_bert_offsets, 
@@ -250,7 +250,7 @@ class SDNetTrainer(BaseTrainer):
                 'answer': predictions[-1]
             })
 
-            submission_res.update({: predictions[-1]})
+            submission_res.update({data_ids[i]: predictions[-1]})
 
         sub_path = self.save_dir
         log.info('Writing submission file to {}...'.format(sub_path))
