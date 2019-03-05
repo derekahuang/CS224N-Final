@@ -284,6 +284,7 @@ class BatchGen:
 
                 if 'BERT' in self.opt:
                     now_bert, now_bert_offsets = self.bertify(ques_words)
+                    t = torch.tensor(now_bert_offsets, dtype = torch.long)
                     query_bert_offsets[i, :len(now_bert_offsets), :] = torch.tensor(now_bert_offsets, dtype = torch.long)
                     q_bert_list.append(now_bert)
 

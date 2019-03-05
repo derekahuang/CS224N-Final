@@ -9,6 +9,7 @@ import random
 import sys
 import time
 import torch
+import csv
 from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
@@ -50,7 +51,7 @@ class SDNetTrainer(BaseTrainer):
             cnt += 1
             if cnt % 50 == 0:
                 print(cnt, '/', len(test_batches))  
-            phrase, phrase_score, pred_json = self.predict(test_batch)
+            phrase, phrase_score, pred_json, submission = self.predict(test_batch)
             predictions.extend(phrase)
             confidence.extend(phrase_score)
             final_json.extend(pred_json)
@@ -94,12 +95,14 @@ class SDNetTrainer(BaseTrainer):
                     confidence = []
                     dev_answer = []
                     final_json = []
+                    submission = {}
                     for j, dev_batch in enumerate(dev_batches):
-                        phrase, phrase_score, pred_json = self.predict(dev_batch)
+                        phrase, phrase_score, pred_json, submission_batch = self.predict(dev_batch)
                         final_json.extend(pred_json)
                         predictions.extend(phrase)
                         confidence.extend(phrase_score)
                         dev_answer.extend(dev_batch[-4]) # answer_str
+                        submission.update(submission_batch)
                     result, all_f1s = score(predictions, dev_answer, final_json)
                     f1 = result['f1']
 
@@ -120,6 +123,13 @@ class SDNetTrainer(BaseTrainer):
                         score_per_instance_json_file = os.path.join(self.saveFolder, 'score_per_instance.json')
                         with open(score_per_instance_json_file, 'w') as output_file:
                             json.dump(score_per_instance, output_file)    
+
+                        sub_path = self.save_dir
+                        with open(sub_path, 'w') as csv_fh:
+                            csv_writer = csv.writer(csv_fh, delimiter=',')
+                            csv_writer.writerow(['Id', 'Predicted'])
+                            for uuid in sorted(submission):
+                                csv_writer.writerow([uuid,submission[uuid]])
 
                     self.log("Epoch {0} - dev: F1: {1:.3f} (best F1: {2:.3f})".format(epoch, f1, best_f1_score))
                     self.log("Results breakdown\n{0}".format(result))
@@ -156,7 +166,7 @@ class SDNetTrainer(BaseTrainer):
         self.network.drop_emb = True
 
         x, x_mask, x_char, x_char_mask, x_features, x_pos, x_ent, x_bert, x_bert_mask, x_bert_offsets, query, query_mask, \
-        query_char, query_char_mask, query_bert, query_bert_mask, query_bert_offsets, ground_truth, context_str, context_words, _, _, _, _, _ = batch
+        query_char, query_char_mask, query_bert, query_bert_mask, query_bert_offsets, ground_truth, context_str, context_words, _, _, _, _, temp = batch
 
         # Run forward
         # score_s, score_e: batch x context_word_num
@@ -249,18 +259,10 @@ class SDNetTrainer(BaseTrainer):
                 'turn_id': turn_ids[i],
                 'answer': predictions[-1]
             })
+            text = '' if predictions[-1] == 'unknown' else predictions[-1]
+            submission_res.update({data_ids[i]: text})
 
-            submission_res.update({data_ids[i]: predictions[-1]})
-
-        sub_path = self.save_dir
-        log.info('Writing submission file to {}...'.format(sub_path))
-        with open(sub_path, 'w') as csv_fh:
-        csv_writer = csv.writer(csv_fh, delimiter=',')
-        csv_writer.writerow(['Id', 'Predicted'])
-        for uuid in sorted(sub_dict):
-            csv_writer.writerow([uuid, sub_dict[uuid]])
-
-        return (predictions, confidence, pred_json) # list of strings, list of floats, list of jsons
+        return (predictions, confidence, pred_json, submission_res) # list of strings, list of floats, list of jsons
 
     def load_model(self, model_path):
         print('Loading model from', model_path)
