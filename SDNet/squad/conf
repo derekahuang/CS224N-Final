@@ -6,8 +6,8 @@ CoQA_DEV_FILE	data/test_s2c.json
 OFFICIAL_TEST_FILE      data/submission_test_s2c.json
 OFFICIAL
 
-PREV_ANS	2
-PREV_QUES	2
+PREV_ANS	1
+PREV_QUES	1
 
 DROPOUT	0.3
 my_dropout_p	0.3

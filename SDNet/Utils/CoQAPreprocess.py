@@ -29,6 +29,7 @@ class CoQAPreprocess():
         self.data_prefix = 'coqa-'
 
         if self.official:
+            print("OFFICIAL RUN")
             self.glove_vocab = load_glove_vocab(self.glove_file, self.glove_dim, to_lower = False)
             print('Official prediction initializes...')
             print('Loading training vocab and vocab char...')
