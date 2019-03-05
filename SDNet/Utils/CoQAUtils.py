@@ -158,7 +158,7 @@ class BatchGen:
         # only take a few training examples for overfitting testing purposes
         if few_examples:
             indices = list(range(len(self.data)))
-            random.sample(indices, 20)
+            indices = indices[:20]
             self.data = [self.data[i] for i in indices]
 
     def __len__(self):
