@@ -3,11 +3,12 @@ SPLIT	dev
 SUB_FILE	submission.csv
 CoQA_TRAIN_FILE	data/train_s2c.json
 CoQA_DEV_FILE	data/test_s2c.json
-OFFICIAL_TEST_FILE      data/submission_test_s2c.json
-OFFICIAL
+OFFICIAL_TEST_FILE   conf~/spacy_intermediate_feature~/coqa-test-preprocessed.json 
+TEMP_FILE       data/real_dev_s2c.json
+MODEL_PATH      conf~/run_7/best_model.pt
 
-PREV_ANS	1
-PREV_QUES	1
+PREV_ANS	0
+PREV_QUES	0
 
 DROPOUT	0.3
 my_dropout_p	0.3

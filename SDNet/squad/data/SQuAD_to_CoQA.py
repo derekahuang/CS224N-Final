@@ -4,9 +4,10 @@
 # Scratch code to convert SQuAD data into CoQA format
 
 import json
+from random import sample
 
 data = {'version': 0.2, 'data': []}
-with open('train.json', 'r') as f:
+with open('real_dev.json', 'r') as f:
     squad = json.load(f)
 
 cnt = 0
@@ -19,7 +20,9 @@ for d in squad['data']:
 
         additional = []
         turn_id = 1
-        for qa in p['qas']:
+        ind = sample([i for i in range(len(p['qas']))], len(p['qas']))
+        for i in ind:
+            qa = p['qas'][i]
             ques.append({
                     'input_text': qa['question'],
                     'turn_id': turn_id, 
@@ -59,5 +62,5 @@ for d in squad['data']:
         data['data'].append(a)
 
 
-with open('train_s2c.json', 'w') as output_file:
+with open('real_dev_s2c.json', 'w') as output_file:
     json.dump(data, output_file, indent=4)

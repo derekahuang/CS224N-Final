@@ -34,7 +34,9 @@ class CoQAPreprocess():
             print('Official prediction initializes...')
             print('Loading training vocab and vocab char...')
             self.train_vocab, self.train_char_vocab, self.train_embedding = self.load_data()
-            self.test_file = self.opt['OFFICIAL_TEST_FILE']
+            self.test_file = os.path.join(opt['datadir'], opt['TEMP_FILE'])
+            if not os.path.exists(os.path.join(self.spacyDir, self.data_prefix + 'real-dev' + '-preprocessed.json')):
+                self.preprocess('real-dev') 
             return
 
         dataset_labels = ['train', 'dev']
@@ -59,6 +61,7 @@ class CoQAPreprocess():
     def preprocess(self, dataset_label):
         file_name = self.train_file if dataset_label == 'train' else (self.dev_file if dataset_label == 'dev' else self.test_file)
         output_file_name = os.path.join(self.spacyDir, self.data_prefix + dataset_label + '-preprocessed.json')
+        print(output_file_name)
 
         print('Preprocessing', dataset_label, 'file:', file_name)
         print('Loading json...')
@@ -175,7 +178,7 @@ class CoQAPreprocess():
                 msgpack.dump(meta, f, encoding='utf8')
 
         dataset['data'] = data
-
+        
         if dataset_label == 'test':
             return dataset
 
@@ -270,7 +273,7 @@ class CoQAPreprocess():
             output['sentences'].append((word_idx, word_idx + len(sent)))
             word_idx += len(sent)
 
-        assert word_idx == len(output['word'])
+        #assert word_idx == len(output['word'])
         return output
 
     '''

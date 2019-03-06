@@ -39,7 +39,8 @@ class SDNetTrainer(BaseTrainer):
         print('-----------------------------------------------')
         print("Initializing model...")
         self.setup_model(self.preproc.train_embedding)
-        self.load_model(model_path)
+        path = os.path.join(self.opt['datadir'], model_path)
+        self.load_model(path)
 
         print("Predicting in batches...")
         test_batches = BatchGen(self.opt, test_data['data'], self.use_cuda, self.preproc.train_vocab, self.preproc.train_char_vocab, evaluation=True)
@@ -56,7 +57,7 @@ class SDNetTrainer(BaseTrainer):
             predictions.extend(phrase)
             confidence.extend(phrase_score)
             final_json.extend(pred_json)
-            submissions.extend(submission)
+            submissions.update(submission)
 
         return predictions, confidence, final_json, submissions
 
@@ -76,10 +77,12 @@ class SDNetTrainer(BaseTrainer):
         print('Loading train json...')
         with open(os.path.join(self.opt['FEATURE_FOLDER'], self.data_prefix + 'train-preprocessed.json'), 'r') as f:
             train_data = json.load(f)
+            # train_data['data'] = train_data['data'][:20]
 
         print('Loading dev json...')
         with open(os.path.join(self.opt['FEATURE_FOLDER'], self.data_prefix + 'dev-preprocessed.json'), 'r') as f:
             dev_data = json.load(f)
+            # dev_data['data'] = dev_data['data'][:20]
 
         best_f1_score = 0.0
         numEpochs = self.opt['EPOCH']
@@ -242,7 +245,9 @@ class SDNetTrainer(BaseTrainer):
                 ed = best_id % context_len
                 st = context_word_offsets[st][0]
                 ed = context_word_offsets[ed][1]
-                if(context_str[st:ed] == '.' or context_str[st:ed] == ':'):
+                output_str = context_str[st:ed]
+                invalid = ['.', ':', ']', ')', '?', '>']
+                if output_str in invalid:
                     predictions.append('unknown')
                 else:
                     predictions.append(context_str[st:ed])

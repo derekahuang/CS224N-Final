@@ -1,10 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 import argparse
 import os
 import sys
 import torch
+import csv
 from Models.SDNetTrainer import SDNetTrainer
 from Utils.Arguments import Arguments
 
@@ -30,4 +32,17 @@ for key,val in cmdline_args.__dict__.items():
 model = SDNetTrainer(opt)    
     
 print('Select command: ' + command)
-model.train()
+if command == 'official':
+    print("Official Test Run")
+    with open(opt['OFFICIAL_TEST_FILE'], 'r') as f:
+        test_data = json.load(f)
+        _, _, _, submission = model.official(opt['MODEL_PATH'], test_data)
+
+        sub_path = opt['SAVE_DIR'] + opt['SUB_FILE']
+        with open(sub_path, 'w') as csv_fh:
+           csv_writer = csv.writer(csv_fh, delimiter=',')
+           csv_writer.writerow(['Id', 'Predicted'])
+           for uuid in sorted(submission):
+               csv_writer.writerow([uuid,submission[uuid]])
+else:
+    model.train()

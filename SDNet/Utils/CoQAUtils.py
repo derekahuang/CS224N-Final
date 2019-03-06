@@ -140,7 +140,7 @@ class BatchGen:
 
         self.answer_span_in_context = 'ANSWER_SPAN_IN_CONTEXT_FEATURE' in self.opt
 
-        self.ques_max_len = (30 + 1) * self.prev_ans + (25 + 1) * (self.prev_ques + 1)
+        self.ques_max_len = (30 + 1) * (self.prev_ans + 1) + (25 + 1) * (self.prev_ques + 1)
         self.char_max_len = 30
 
         print('*****************')
@@ -283,8 +283,17 @@ class BatchGen:
                             x_features[i, st:ed, 4] = 1.0
 
                 if 'BERT' in self.opt:
+                    #if (len(ques_words) <= 0):
+                    #    continue
+                    # print (ques_words)
+                    # print (len(ques_words))
                     now_bert, now_bert_offsets = self.bertify(ques_words)
                     t = torch.tensor(now_bert_offsets, dtype = torch.long)
+                    # print (now_bert)
+                    # print (len(now_bert))
+                    # print (now_bert_offsets)
+                    # print (len(now_bert_offsets))
+
                     query_bert_offsets[i, :len(now_bert_offsets), :] = torch.tensor(now_bert_offsets, dtype = torch.long)
                     q_bert_list.append(now_bert)
 
