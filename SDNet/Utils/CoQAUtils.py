@@ -140,7 +140,7 @@ class BatchGen:
 
         self.answer_span_in_context = 'ANSWER_SPAN_IN_CONTEXT_FEATURE' in self.opt
 
-        self.ques_max_len = (30 + 1) * (self.prev_ans + 1) + (25 + 1) * (self.prev_ques + 1)
+        self.ques_max_len = (30 + 1) * (self.prev_ans) + (25 + 1) * (self.prev_ques + 1)
         self.char_max_len = 30
 
         print('*****************')
@@ -253,10 +253,10 @@ class BatchGen:
                     if not self.evaluation and datum['qas'][j]['answer_span'][0] == -1: # questions with "unknown" answers are filtered out
                         continue    
 
-                    q = [2] + datum['qas'][j]['annotated_question']['wordid']
+                    q = [2] + datum['qas'][j]['annotated_question']['wordid'][:25]
                     q_char = [[0]] + datum['qas'][j]['annotated_question']['charid']
                     if j >= i - self.prev_ques and p + len(q) <= self.ques_max_len:
-                        ques_words.extend(['<Q>'] + datum['qas'][j]['annotated_question']['word'])
+                        ques_words.extend(['<Q>'] + datum['qas'][j]['annotated_question']['word'][:25])
                         # <Q>: 2, <A>: 3                    
                         query[i, p:(p+len(q))] = torch.LongTensor(q)
                         if self.use_char_cnn:
@@ -283,17 +283,11 @@ class BatchGen:
                             x_features[i, st:ed, 4] = 1.0
 
                 if 'BERT' in self.opt:
-                    #if (len(ques_words) <= 0):
-                    #    continue
-                    # print (ques_words)
-                    # print (len(ques_words))
                     now_bert, now_bert_offsets = self.bertify(ques_words)
-                    t = torch.tensor(now_bert_offsets, dtype = torch.long)
-                    # print (now_bert)
-                    # print (len(now_bert))
-                    # print (now_bert_offsets)
-                    # print (len(now_bert_offsets))
-
+                    #print(datum['qas'][i]['question'])
+                    #print(datum['qas'][i]['raw_answer'])
+                    #print(ques_words)
+                    #print(len(now_bert_offsets))
                     query_bert_offsets[i, :len(now_bert_offsets), :] = torch.tensor(now_bert_offsets, dtype = torch.long)
                     q_bert_list.append(now_bert)
 
@@ -312,7 +306,7 @@ class BatchGen:
                     ground_truth[i, 1] = -1
                     answer_str = 'no'
 
-                if answer.lower() == ['unknown', 'unknown.']:
+                if answer.lower() in ['unknown', 'unknown.']:
                     ground_truth[i, 0] = -1
                     ground_truth[i, 1] = -1
                     answer_str = 'unknown'
