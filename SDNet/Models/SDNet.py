@@ -263,7 +263,7 @@ class SDNet(nn.Module):
 
         # predict scores
         score_s, score_e, score_no, score_yes, score_noanswer = self.get_answer(x_final, ques_merged, x_mask)
-        return score_s, score_e, 0, 0, score_noanswer
+        return score_s, score_e, score_no, score_yes, score_noanswer
     
     '''
      input: 

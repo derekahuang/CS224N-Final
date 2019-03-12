@@ -81,6 +81,7 @@ class SDNetTrainer(BaseTrainer):
 
         print('Loading dev json...')
         with open(os.path.join(self.opt['FEATURE_FOLDER'], self.data_prefix + 'dev-preprocessed.json'), 'r') as f:
+        #with open(os.path.join(self.opt['FEATURE_FOLDER'], self.data_prefix + 'dev_shuffle-preprocessed.json'), 'r') as f:
             dev_data = json.load(f)
             # dev_data['data'] = dev_data['data'][:20]
 
