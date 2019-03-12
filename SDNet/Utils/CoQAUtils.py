@@ -252,35 +252,20 @@ class BatchGen:
                         continue;
                     if not self.evaluation and datum['qas'][j]['answer_span'][0] == -1: # questions with "unknown" answers are filtered out
                         continue    
-
                     q = [2] + datum['qas'][j]['annotated_question']['wordid'][:25]
                     q_char = [[0]] + datum['qas'][j]['annotated_question']['charid']
                     if j >= i - self.prev_ques and p + len(q) <= self.ques_max_len:
                         ques_words.extend(['<Q>'] + datum['qas'][j]['annotated_question']['word'][:25])
+                        # print(datum['qas'][j]['annotated_question']['word'][:25])
                         # <Q>: 2, <A>: 3                    
                         query[i, p:(p+len(q))] = torch.LongTensor(q)
                         if self.use_char_cnn:
                             for k in range(len(q_char)):
                                 t = min(self.char_max_len, len(q_char[k]))
-                                query_char[i, p + k, :t] = torch.LongTensor(q_char[k][:t])
+                                second_max = min(self.ques_max_len - 1, p + k)
+                                query_char[i, second_max, :t] = torch.LongTensor(q_char[k][:t])
                         ques = datum['qas'][j]['question'].lower()
                         p += len(q)
-
-                    a = [3] + datum['qas'][j]['annotated_answer']['wordid']
-                    a_char = [[0]] + datum['qas'][j]['annotated_answer']['charid']
-                    if j < i and j >= i - self.prev_ans and p + len(a) <= self.ques_max_len:
-                        ques_words.extend(['<A>'] + datum['qas'][j]['annotated_answer']['word'])
-                        query[i, p:(p+len(a))] = torch.LongTensor(a) 
-                        if self.use_char_cnn:
-                            for k in range(len(a_char)):
-                                t = min(self.char_max_len, len(a_char[k]))
-                                query_char[i, p + k, :t] = torch.LongTensor(a_char[k][:t])
-                        p += len(a)
-
-                        if self.answer_span_in_context:
-                            st = datum['qas'][j]['answer_span'][0]
-                            ed = datum['qas'][j]['answer_span'][1] + 1
-                            x_features[i, st:ed, 4] = 1.0
 
                 if 'BERT' in self.opt:
                     now_bert, now_bert_offsets = self.bertify(ques_words)
