@@ -281,15 +281,6 @@ class BatchGen:
                 ground_truth[i, 1] = datum['qas'][i]['answer_span'][1]
                 answer = datum['qas'][i]['raw_answer']
 
-                if answer.lower() in ['yes', 'yes.']:
-                    ground_truth[i, 0] = -1
-                    ground_truth[i, 1] = 0
-                    answer_str = 'yes'
-
-                if answer.lower() in ['no', 'no.']:
-                    ground_truth[i, 0] = 0
-                    ground_truth[i, 1] = -1
-                    answer_str = 'no'
 
                 if answer.lower() in ['unknown', 'unknown.']:
                     ground_truth[i, 0] = -1
@@ -431,13 +422,7 @@ def score(pred, truth, final_json):
         this_f1 = _f1_score(p, t)
         f1 += this_f1
         all_f1s.append(this_f1)
-        if t[0].lower() == 'no':
-            no_total += 1
-            no_f1 += this_f1
-        elif t[0].lower() == 'yes':
-            yes_total += 1
-            yes_f1 += this_f1
-        elif t[0].lower() == 'unknown':
+        if t[0].lower() == 'unknown':
             no_ans_total += 1
             no_ans_f1 += this_f1
         else:
@@ -445,14 +430,6 @@ def score(pred, truth, final_json):
             normal_f1 += this_f1
 
     f1 = 100. * f1 / total
-    if no_total == 0:
-        no_f1 = 0.
-    else:
-        no_f1 = 100. * no_f1 / no_total
-    if yes_total == 0:
-        yes_f1 = 0
-    else:
-        yes_f1 = 100. * yes_f1 / yes_total
     if no_ans_total == 0:
         no_ans_f1 = 0.
     else:
@@ -461,10 +438,6 @@ def score(pred, truth, final_json):
     result = {
         'total': total,
         'f1': f1,
-        'no_total': no_total,
-        'no_f1': no_f1,
-        'yes_total': yes_total,
-        'yes_f1': yes_f1,
         'no_ans_total': no_ans_total,
         'no_ans_f1': no_ans_f1,
         'normal_total': normal_total,
