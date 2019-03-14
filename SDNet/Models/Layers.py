@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import os
+import sys
 import random
 import torch
 import torch.nn as nn
@@ -38,6 +39,7 @@ def dropout(x, p=0, training=False):
     else:
         return F.dropout(x, p=p, training=training)
 
+
 class CNN(nn.Module):
     def __init__(self, input_size, window_size, output_size):
         super(CNN, self).__init__()
@@ -69,7 +71,6 @@ class CNN(nn.Module):
         x_conv = F.tanh(self.cnn(x_unsqueeze)).squeeze(3)
         x_output = torch.transpose(x_conv, 1, 2)
         return x_output
-
 
 class MaxPooling(nn.Module):
     def __init__(self):
@@ -121,6 +122,68 @@ class AveragePooling(nn.Module):
 
         return x_sum / x_num;
 
+
+# #input_size, window_size, output_size
+class StackedCNN(nn.Module):
+    def __init__(self, input_size, output_size, window_size, num_layers=2, add_feat=0, cnn_type = nn.Conv2d):
+        super(StackedCNN, self).__init__()
+        self.num_layers = num_layers
+        padding_size = int((window_size - 1) / 2)
+        self._output_size = output_size
+        # self.cnn = nn.Conv2d(1, int(output_size/2), (window_size, input_size), padding = (padding_size, 0))
+        # intermediate_feature_size = int(output_size/2) + add_feat
+        # print ('derek' + str(intermediate_feature_size))
+        # self.cnn2 = nn.Conv2d(1, output_size, (window_size, intermediate_feature_size), padding = (padding_size, 0))
+        # init.xavier_uniform(self.cnn.weight)
+        # init.xavier_uniform(self.cnn2.weight)
+
+        self.cnns = nn.ModuleList()
+        intermediate_feature_size = input_size
+        for i in range (num_layers):
+            cnn = cnn_type(1, output_size, (window_size, intermediate_feature_size), padding = (padding_size, 0))
+            init.xavier_uniform(cnn.weight)
+            intermediate_feature_size = output_size + add_feat if i == 1 else output_size
+            self.cnns.append(cnn)
+
+
+
+        # for i in range(num_layers):
+        #     in_size = input_size if i == 0 else (self.bidir_coef * hidden_size + add_feat if i== 1 else self.bidir_coef * hidden_size)
+        #     rnn = rnn_type(in_size, hidden_size, num_layers = 1, bidirectional = bidirectional, batch_first = True)
+        #     self.rnns.append(rnn)
+
+    @property
+    def output_size(self):
+        return self._output_size
+
+    '''
+     (item, subitem) can be (word, characters), or (sentence, words)
+     x: num_items x max_subitem_size x input_size
+     x_mask: num_items x max_subitem_size (not used but put here to align with RNN format)
+     return num_items x max_subitem_size x output_size
+    '''
+    def forward(self, x, x_mask, return_list=False, x_additional = None):
+        '''
+         x_unsqueeze: num_items x 1 x max_subitem_size x input_size  
+         x_conv: num_items x output_size x max_subitem_size
+         x_output: num_items x max_subitem_size x output_size
+        '''
+        hiddens = [x]
+        for i in range (self.num_layers):
+            curr_x = hiddens[-1]
+            x_dropout = F.dropout(curr_x, p = dropout_p, training = self.training)
+            x_unsqueeze = x_dropout.unsqueeze(1)
+            if i == 1 and x_additional is not None:
+                x_unsqueeze = torch.cat((x_unsqueeze, x_additional), 3)
+            x_conv = F.tanh(self.cnns[i](x_unsqueeze)).squeeze(3)
+            hiddens.append(torch.transpose(x_conv, 1, 2))
+        output = hiddens[-1]
+
+        if return_list:
+            return output, hiddens[1:]
+        else:
+            return output
+
 class StackedBRNN(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers, rnn_type = nn.LSTM, concat_layers = False, bidirectional = True, add_feat=0):
         super(StackedBRNN, self).__init__()
@@ -154,6 +217,7 @@ class StackedBRNN(nn.Module):
         hiddens = [x]
         for i in range(self.num_layers):
             rnn_input = hiddens[-1]
+            
             if i == 1 and x_additional is not None:
                 rnn_input = torch.cat((rnn_input, x_additional), 2)
 
@@ -301,6 +365,19 @@ def RNN_from_opt(input_size_, hidden_size_, num_layers=1, concat_rnn=False, add_
         output_size *= num_layers
 
     return new_rnn, output_size   
+
+def CNN_from_opt(input_size_, output_size_, window_size_, num_layers=2, add_feat=0):
+    new_cnn = StackedCNN(
+        input_size=input_size_, 
+        output_size=output_size_,
+        window_size=window_size_, 
+        num_layers=num_layers,
+        add_feat=add_feat,
+    )
+
+    output_size = output_size_
+
+    return new_cnn, output_size  
 
 # For summarizing a set of vectors into a single vector
 class LinearSelfAttn(nn.Module):

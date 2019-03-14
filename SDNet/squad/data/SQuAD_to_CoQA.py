@@ -7,7 +7,7 @@ import json
 from random import sample
 
 data = {'version': 0.2, 'data': []}
-with open('real_dev.json', 'r') as f:
+with open('test.json', 'r') as f:
     squad = json.load(f)
 
 cnt = 0
@@ -62,5 +62,5 @@ for d in squad['data']:
         data['data'].append(a)
 
 
-with open('real_dev_s2c.json', 'w') as output_file:
+with open('eli_s2c.json', 'w') as output_file:
     json.dump(data, output_file, indent=4)
