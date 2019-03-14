@@ -125,7 +125,7 @@ class AveragePooling(nn.Module):
 
 # #input_size, window_size, output_size
 class StackedCNN(nn.Module):
-    def __init__(self, input_size, output_size, window_size, num_layers=2, add_feat=0, cnn_type = nn.Conv2d, droupout_p):
+    def __init__(self, input_size, output_size, window_size, num_layers=2, add_feat=0, cnn_type = nn.Conv2d):
         super(StackedCNN, self).__init__()
         self.num_layers = num_layers
         padding_size = int((window_size - 1) / 2)
