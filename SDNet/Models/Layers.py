@@ -14,6 +14,7 @@ from torch.nn.utils.rnn import pad_packed_sequence as unpack
 from torch.nn.utils.rnn import pack_padded_sequence as pack
 import copy
 import math
+from torch.autograd import Variable
 
 def set_dropout_prob(p):
     global dropout_p
