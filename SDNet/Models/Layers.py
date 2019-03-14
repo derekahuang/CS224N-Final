@@ -125,7 +125,7 @@ class AveragePooling(nn.Module):
 
 # #input_size, window_size, output_size
 class StackedCNN(nn.Module):
-    def __init__(self, input_size, output_size, window_size, num_layers=2, add_feat=0, cnn_type = nn.Conv2d):
+    def __init__(self, input_size, output_size, window_size, num_layers=2, add_feat=0, cnn_type = nn.Conv2d, droupout_p):
         super(StackedCNN, self).__init__()
         self.num_layers = num_layers
         padding_size = int((window_size - 1) / 2)
@@ -175,6 +175,7 @@ class StackedCNN(nn.Module):
             x_unsqueeze = x_dropout.unsqueeze(1)
             if i == 1 and x_additional is not None:
                 x_unsqueeze = torch.cat((x_unsqueeze, x_additional), 3)
+            x_conv = F.dropout(x_conv, p = dropout_p, training = self.training)
             x_conv = F.tanh(self.cnns[i](x_unsqueeze)).squeeze(3)
             hiddens.append(torch.transpose(x_conv, 1, 2))
         output = hiddens[-1]
