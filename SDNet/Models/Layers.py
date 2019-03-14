@@ -774,6 +774,8 @@ class Transformer(nn.Module):
         self.encoder = Encoder(src_vocab, d_model, N, heads, dropout)
         self.decoder = Decoder(trg_vocab, d_model, N, heads, dropout)
         self.out = nn.Linear(d_model, trg_vocab)
+        for p in self.parameters:
+            nn.init.xavier_uniform_(p)
     def forward(self, src, trg, src_mask, trg_mask):
         e_outputs = self.encoder(src, src_mask)
         #print("DECODER")
