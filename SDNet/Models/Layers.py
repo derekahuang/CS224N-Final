@@ -175,7 +175,6 @@ class StackedCNN(nn.Module):
             x_unsqueeze = x_dropout.unsqueeze(1)
             if i == 1 and x_additional is not None:
                 x_unsqueeze = torch.cat((x_unsqueeze, x_additional), 3)
-            x_conv = F.dropout(x_conv, p = dropout_p, training = self.training)
             x_conv = F.tanh(self.cnns[i](x_unsqueeze)).squeeze(3)
             hiddens.append(torch.transpose(x_conv, 1, 2))
         output = hiddens[-1]
