@@ -257,35 +257,20 @@ class BatchGen:
                         continue;
                     if not self.evaluation and datum['qas'][j]['answer_span'][0] == -1: # questions with "unknown" answers are filtered out
                         continue    
-
                     q = [2] + datum['qas'][j]['annotated_question']['wordid'][:25]
                     q_char = [[0]] + datum['qas'][j]['annotated_question']['charid']
                     if j >= i - self.prev_ques and p + len(q) <= self.ques_max_len:
                         ques_words.extend(['<Q>'] + datum['qas'][j]['annotated_question']['word'][:25])
+                        # print(datum['qas'][j]['annotated_question']['word'][:25])
                         # <Q>: 2, <A>: 3                    
                         query[i, p:(p+len(q))] = torch.LongTensor(q)
                         if self.use_char_cnn:
                             for k in range(len(q_char)):
                                 t = min(self.char_max_len, len(q_char[k]))
-                                query_char[i, p + k, :t] = torch.LongTensor(q_char[k][:t])
+                                second_max = min(self.ques_max_len - 1, p + k)
+                                query_char[i, second_max, :t] = torch.LongTensor(q_char[k][:t])
                         ques = datum['qas'][j]['question'].lower()
                         p += len(q)
-
-                    a = [3] + datum['qas'][j]['annotated_answer']['wordid']
-                    a_char = [[0]] + datum['qas'][j]['annotated_answer']['charid']
-                    if j < i and j >= i - self.prev_ans and p + len(a) <= self.ques_max_len:
-                        ques_words.extend(['<A>'] + datum['qas'][j]['annotated_answer']['word'])
-                        query[i, p:(p+len(a))] = torch.LongTensor(a) 
-                        if self.use_char_cnn:
-                            for k in range(len(a_char)):
-                                t = min(self.char_max_len, len(a_char[k]))
-                                query_char[i, p + k, :t] = torch.LongTensor(a_char[k][:t])
-                        p += len(a)
-
-                        if self.answer_span_in_context:
-                            st = datum['qas'][j]['answer_span'][0]
-                            ed = datum['qas'][j]['answer_span'][1] + 1
-                            x_features[i, st:ed, 4] = 1.0
 
                 if 'BERT' in self.opt:
                     now_bert, now_bert_offsets = self.bertify(ques_words)
@@ -301,15 +286,6 @@ class BatchGen:
                 ground_truth[i, 1] = datum['qas'][i]['answer_span'][1]
                 answer = datum['qas'][i]['raw_answer']
 
-                if answer.lower() in ['yes', 'yes.']:
-                    ground_truth[i, 0] = -1
-                    ground_truth[i, 1] = 0
-                    answer_str = 'yes'
-
-                if answer.lower() in ['no', 'no.']:
-                    ground_truth[i, 0] = 0
-                    ground_truth[i, 1] = -1
-                    answer_str = 'no'
 
                 if answer.lower() in ['unknown', 'unknown.']:
                     ground_truth[i, 0] = -1
@@ -451,13 +427,7 @@ def score(pred, truth, final_json):
         this_f1 = _f1_score(p, t)
         f1 += this_f1
         all_f1s.append(this_f1)
-        if t[0].lower() == 'no':
-            no_total += 1
-            no_f1 += this_f1
-        elif t[0].lower() == 'yes':
-            yes_total += 1
-            yes_f1 += this_f1
-        elif t[0].lower() == 'unknown':
+        if t[0].lower() == 'unknown':
             no_ans_total += 1
             no_ans_f1 += this_f1
         else:
@@ -465,14 +435,6 @@ def score(pred, truth, final_json):
             normal_f1 += this_f1
 
     f1 = 100. * f1 / total
-    if no_total == 0:
-        no_f1 = 0.
-    else:
-        no_f1 = 100. * no_f1 / no_total
-    if yes_total == 0:
-        yes_f1 = 0
-    else:
-        yes_f1 = 100. * yes_f1 / yes_total
     if no_ans_total == 0:
         no_ans_f1 = 0.
     else:
@@ -481,10 +443,6 @@ def score(pred, truth, final_json):
     result = {
         'total': total,
         'f1': f1,
-        'no_total': no_total,
-        'no_f1': no_f1,
-        'yes_total': yes_total,
-        'yes_f1': yes_f1,
         'no_ans_total': no_ans_total,
         'no_ans_f1': no_ans_f1,
         'normal_total': normal_total,

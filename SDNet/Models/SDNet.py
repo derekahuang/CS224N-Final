@@ -126,18 +126,14 @@ class SDNet(nn.Module):
         self.context_rnn, context_rnn_output_size = RNN_from_opt(x_input_size, opt['hidden_size'],
             num_layers=opt['in_rnn_layers'], concat_rnn=opt['concat_rnn'], add_feat=addtional_feat)
         # RNN question encoder
-        self.ques_rnn, ques_rnn_output_size = RNN_from_opt(ques_input_size, opt['hidden_size'],
-            num_layers=opt['in_rnn_layers'], concat_rnn=opt['concat_rnn'], add_feat=addtional_feat)
+        self.ques_cnn, ques_cnn_output_size = CNN_from_opt(ques_input_size, opt['hidden_size']*2, 
+            opt['window_size_cnn'], num_layers=opt['in_cnn_layers'], add_feat=addtional_feat)
 
-        # # CNN context encoder
-        # self.context_cnn, context_cnn_output_size = CNN_from_opt(x_input_size, opt['hidden_size']*2,
-        #     opt['window_size_cnn'], num_layers=opt['in_cnn_layers'], add_feat=addtional_feat)
-        # # RNN question encoder
-        # self.ques_cnn, ques_cnn_output_size = CNN_from_opt(ques_input_size, opt['hidden_size']*2, 
-        #     opt['window_size_cnn'], num_layers=opt['in_cnn_layers'], add_feat=addtional_feat)
+        # # Output sizes of rnn encoders
+        # print('After Input LSTM, the vector_sizes [doc, query] are [', context_rnn_output_size, ques_rnn_output_size, '] *', opt['in_rnn_layers'])
 
-        # Output sizes of rnn encoders
-        print('After Input LSTM, the vector_sizes [doc, query] are [', context_rnn_output_size, ques_rnn_output_size, '] *', opt['in_rnn_layers'])
+        # Output sizes of cnn encoders
+        print('After CNN, the vector_sizes [doc, query] are [', context_cnn_output_size, ques_cnn_output_size, '] *', opt['in_rnn_layers'])
 
         # # Output sizes of cnn encoders
         # print('After CNN, the vector_sizes [doc, query] are [', context_cnn_output_size, ques_cnn_output_size, '] *', opt['in_cnn_layers'])
@@ -153,7 +149,7 @@ class SDNet(nn.Module):
         self.deep_attn_output_size = self.deep_attn.output_size
 
         # Question understanding and compression
-        self.high_lvl_ques_rnn , high_lvl_ques_rnn_output_size = RNN_from_opt(ques_rnn_output_size * opt['in_rnn_layers'], 
+        self.high_lvl_ques_rnn , high_lvl_ques_rnn_output_size = RNN_from_opt(ques_cnn_output_size * opt['in_rnn_layers'], 
             opt['highlvl_hidden_size'], num_layers = opt['question_high_lvl_rnn_layers'], concat_rnn = True)
 
         # # Question understanding and compression
@@ -255,22 +251,14 @@ class SDNet(nn.Module):
         x_input = torch.cat(x_input_list, 2) # batch x x_len x (vocab_dim + cdim + vocab_dim + pos_dim + ent_dim + feature_dim)
         ques_input = torch.cat(ques_input_list, 2) # batch x q_len x (vocab_dim + cdim)
 
-        # print (ques_input.shape)
+        # # Multi-layer RNN
+        # _, x_rnn_layers = self.context_rnn(x_input, x_mask, return_list=True, x_additional=x_cemb) # layer x batch x x_len x context_rnn_output_size
+        # _, ques_rnn_layers = self.ques_rnn(ques_input, q_mask, return_list=True, x_additional=ques_cemb) # layer x batch x q_len x ques_rnn_output_size
 
-        # # Pre Encoding Context
-        # x_new_input = self.context_pre_cnn(x_input)
-        # ques_new_input = self.ques_pre_cnn(ques_input)
+        # Multi-layer CNN
+        _, x_cnn_layers = self.context_cnn(x_input, x_mask, return_list=True, x_additional=x_cemb) # layer x batch x x_len x context_rnn_output_size
+        _, ques_cnn_layers = self.ques_cnn(ques_input, q_mask, return_list=True, x_additional=ques_cemb) # layer x batch x q_len x ques_rnn_output_size
 
-        # Multi-layer RNN
-        _, x_rnn_layers = self.context_rnn(x_input, x_mask, return_list=True, x_additional=x_cemb) # layer x batch x x_len x context_rnn_output_size
-        _, ques_rnn_layers = self.ques_rnn(ques_input, q_mask, return_list=True, x_additional=ques_cemb) # layer x batch x q_len x ques_rnn_output_size
-
-        # # Multi-layer CNN
-        # _, x_cnn_layers = self.context_cnn(x_input, x_mask, return_list=True, x_additional=x_cemb) # layer x batch x x_len x context_rnn_output_size
-        # _, ques_cnn_layers = self.ques_cnn(ques_input, q_mask, return_list=True, x_additional=ques_cemb) # layer x batch x q_len x ques_rnn_output_size
-
-
-        # rnn with question only 
         # for t in x_cnn_layers:
         #     print (t.shape)
         # print ('eli')

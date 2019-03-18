@@ -4,7 +4,7 @@ SUB_FILE	submission.csv
 CoQA_TRAIN_FILE	data/train_s2c.json
 CoQA_DEV_FILE	data/test_s2c.json
 OFFICIAL_TEST_FILE   conf~/spacy_intermediate_feature~/coqa-test-preprocessed.json 
-MODEL_PATH      conf~/run_7/best_model.pt
+MODEL_PATH      conf~/run_14/best_model.pt
 
 PREV_ANS	0
 PREV_QUES	0
@@ -46,9 +46,11 @@ query_self_attn_hidden_size	300
 pos_dim	12
 ent_dim	8
 hidden_size	125
+window_size_cnn 5
 deep_att_hidden_size_per_abstr	250
 deep_inter_att_use_CoVe	1
 in_rnn_layers	2
+in_cnn_layers   2
 highlvl_hidden_size	125
 question_high_lvl_rnn_layers	1
 char_emb_size	8

@@ -81,9 +81,7 @@ class SDNetTrainer(BaseTrainer):
 
         print('Loading dev json...')
         with open(os.path.join(self.opt['FEATURE_FOLDER'], self.data_prefix + 'dev-preprocessed.json'), 'r') as f:
-        #with open(os.path.join(self.opt['FEATURE_FOLDER'], self.data_prefix + 'dev-unshuffle-preprocessed.json'), 'r') as f:
             dev_data = json.load(f)
-            # dev_data['data'] = dev_data['data'][:20]
 
         best_f1_score = 0.0
         numEpochs = self.opt['EPOCH']
