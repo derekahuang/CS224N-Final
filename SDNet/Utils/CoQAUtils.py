@@ -157,6 +157,11 @@ class BatchGen:
             random.shuffle(indices)
             self.data = [self.data[i] for i in indices]
 
+        # for i in range (100):
+        #     for j in range (len(data[i]['qas'])):
+        #         print(data[i]['qas'][j]['raw_answer'])
+        #         break
+
         # only take a few training examples for overfitting testing purposes
         if OVERFIT:
             indices = list(range(len(self.data)))

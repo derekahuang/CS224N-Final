@@ -81,6 +81,7 @@ class SDNetTrainer(BaseTrainer):
 
         print('Loading dev json...')
         with open(os.path.join(self.opt['FEATURE_FOLDER'], self.data_prefix + 'dev-preprocessed.json'), 'r') as f:
+        #with open(os.path.join(self.opt['FEATURE_FOLDER'], self.data_prefix + 'dev-unshuffle-preprocessed.json'), 'r') as f:
             dev_data = json.load(f)
             # dev_data['data'] = dev_data['data'][:20]
 
@@ -176,12 +177,15 @@ class SDNetTrainer(BaseTrainer):
         # Run forward
         # score_s, score_e: batch x context_word_num
         # score_yes, score_no, score_no_answer: batch x 1
+        # score_s, score_e, score_no_answer = self.network(x, x_mask, x_char, x_char_mask, x_features, x_pos, x_ent, x_bert, x_bert_mask, x_bert_offsets, 
+        #     query, query_mask, query_char, query_char_mask, query_bert, query_bert_mask, query_bert_offsets, len(context_words))
         score_s, score_e, score_yes, score_no, score_no_answer = self.network(x, x_mask, x_char, x_char_mask, x_features, x_pos, x_ent, x_bert, x_bert_mask, x_bert_offsets, 
             query, query_mask, query_char, query_char_mask, query_bert, query_bert_mask, query_bert_offsets, len(context_words))
         max_len = self.opt['max_len'] or score_s.size(1)
         batch_size = score_s.shape[0]
         context_len = score_s.size(1)
         expand_score = gen_upper_triangle(score_s, score_e, max_len, self.use_cuda)
+        # scores = torch.cat((expand_score, score_no_answer), dim=1) # batch x (context_len * context_len + 3)
         scores = torch.cat((expand_score, score_no, score_yes, score_no_answer), dim=1) # batch x (context_len * context_len + 3)
         targets = []
         span_idx = int(context_len * context_len)
@@ -221,11 +225,15 @@ class SDNetTrainer(BaseTrainer):
         context_len = len(context_words)
         score_s, score_e, score_yes, score_no, score_no_answer = self.network(x, x_mask, x_char, x_char_mask, x_features, x_pos, x_ent, x_bert, x_bert_mask, x_bert_offsets, 
             query, query_mask, query_char, query_char_mask, query_bert, query_bert_mask, query_bert_offsets, len(context_words))
+        # score_s, score_e, score_no_answer = self.network(x, x_mask, x_char, x_char_mask, x_features, x_pos, x_ent, x_bert, x_bert_mask, x_bert_offsets, 
+        #     query, query_mask, query_char, query_char_mask, query_bert, query_bert_mask, query_bert_offsets, len(context_words))
         batch_size = score_s.shape[0]
         max_len = self.opt['max_len'] or score_s.size(1)
 
         expand_score = gen_upper_triangle(score_s, score_e, max_len, self.use_cuda)
-        scores = torch.cat((expand_score, score_no, score_yes, score_no_answer), dim=1) # batch x (context_len * context_len + 3)
+        # scores = torch.cat((expand_score, score_no, score_yes, score_no_answer), dim=1) # batch x (context_len * context_len + 3)       
+        scores = torch.cat((expand_score, score_no_answer), dim=1) # batch x (context_len * context_len + 3)
+
         prob = F.softmax(scores, dim = 1).data.cpu() # Transfer to CPU/normal tensors for numpy ops
 
         # Get argmax text spans
