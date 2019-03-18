@@ -104,7 +104,7 @@ def gen_upper_triangle(score_s, score_e, max_len, use_cuda):
     return expand_score.contiguous().view(batch_size, -1) # batch x (context_len * context_len)    
 
 class BatchGen:
-    def __init__(self, opt, data, use_cuda, vocab, char_vocab, evaluation=False):
+    def __init__(self, opt, data, use_cuda, vocab, char_vocab, evaluation=False, squad=True):
         # file_name = os.path.join(self.spacyDir, 'coqa-' + dataset_label + '-preprocessed.json')
 
         self.data = data
@@ -113,6 +113,7 @@ class BatchGen:
         self.char_vocab = char_vocab
         self.evaluation = evaluation
         self.opt = opt
+        self.squad = squad
         if 'PREV_ANS' in self.opt:
             self.prev_ans = self.opt['PREV_ANS']
         else:
@@ -140,7 +141,8 @@ class BatchGen:
 
         self.answer_span_in_context = 'ANSWER_SPAN_IN_CONTEXT_FEATURE' in self.opt
 
-        self.ques_max_len = (30 + 1) * (self.prev_ans) + (25 + 1) * (self.prev_ques + 1)
+        #self.ques_max_len = (30 + 1) * (self.prev_ans) + (25 + 1) * (self.prev_ques + 1)
+        self.ques_max_len = 52
         self.char_max_len = 30
 
         print('*****************')
@@ -197,7 +199,7 @@ class BatchGen:
             x_len = context_len
 
             qa_len = len(datum['qas'])
-
+            
             batch_size = qa_len
             x = torch.LongTensor(1, x_len).fill_(0)
             x_char = torch.LongTensor(1, x_len, self.char_max_len).fill_(0)
@@ -241,7 +243,8 @@ class BatchGen:
             for i in range(qa_len):
                 x_features[i, :context_len, :4] = torch.Tensor(datum['qas'][i]['context_features'])
                 turn_ids.append(int(datum['qas'][i]['turn_id']))
-                data_ids.append(str(datum['qas'][i]['data_id']))
+                if self.squad:
+                    data_ids.append(str(datum['qas'][i]['data_id']))
                 # query
                 p = 0
 
@@ -252,10 +255,10 @@ class BatchGen:
                         continue;
                     if not self.evaluation and datum['qas'][j]['answer_span'][0] == -1: # questions with "unknown" answers are filtered out
                         continue    
-                    q = [2] + datum['qas'][j]['annotated_question']['wordid'][:25]
+                    q = [2] + datum['qas'][j]['annotated_question']['wordid'][:(self.ques_max_len - 1)]
                     q_char = [[0]] + datum['qas'][j]['annotated_question']['charid']
                     if j >= i - self.prev_ques and p + len(q) <= self.ques_max_len:
-                        ques_words.extend(['<Q>'] + datum['qas'][j]['annotated_question']['word'][:25])
+                        ques_words.extend(['<Q>'] + datum['qas'][j]['annotated_question']['word'][:(self.ques_max_len - 1)])
                         # print(datum['qas'][j]['annotated_question']['word'][:25])
                         # <Q>: 2, <A>: 3                    
                         query[i, p:(p+len(q))] = torch.LongTensor(q)
@@ -438,6 +441,57 @@ def score(pred, truth, final_json):
     result = {
         'total': total,
         'f1': f1,
+        'no_ans_total': no_ans_total,
+        'no_ans_f1': no_ans_f1,
+        'normal_total': normal_total,
+        'normal_f1': normal_f1,
+    }
+    return result, all_f1s
+
+def score_coqa(pred, truth, final_json):
+    assert len(pred) == len(truth)
+    no_ans_total = no_total = yes_total = normal_total = total = 0
+    no_ans_f1 = no_f1 = yes_f1 = normal_f1 = f1 = 0
+    all_f1s = []
+    for p, t, j in zip(pred, truth, final_json):
+        total += 1
+        this_f1 = _f1_score(p, t)
+        f1 += this_f1
+        all_f1s.append(this_f1)
+        if t[0].lower() == 'no':
+            no_total += 1
+            no_f1 += this_f1
+        elif t[0].lower() == 'yes':
+            yes_total += 1
+            yes_f1 += this_f1
+        elif t[0].lower() == 'unknown':
+            no_ans_total += 1
+            no_ans_f1 += this_f1
+        else:
+            normal_total += 1
+            normal_f1 += this_f1
+
+    f1 = 100. * f1 / total
+    if no_total == 0:
+        no_f1 = 0.
+    else:
+        no_f1 = 100. * no_f1 / no_total
+    if yes_total == 0:
+        yes_f1 = 0
+    else:
+        yes_f1 = 100. * yes_f1 / yes_total
+    if no_ans_total == 0:
+        no_ans_f1 = 0.
+    else:
+        no_ans_f1 = 100. * no_ans_f1 / no_ans_total
+    normal_f1 = 100. * normal_f1 / normal_total
+    result = {
+        'total': total,
+        'f1': f1,
+        'no_total': no_total,
+        'no_f1': no_f1,
+        'yes_total': yes_total,
+        'yes_f1': yes_f1,
         'no_ans_total': no_ans_total,
         'no_ans_f1': no_ans_f1,
         'normal_total': normal_total,

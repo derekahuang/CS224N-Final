@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import sys
 import math
 import random
 import numpy as np
@@ -63,7 +64,8 @@ class SDNet(nn.Module):
             self.Bert = Bert(self.opt)
             if 'LOCK_BERT' in self.opt:
                 print('Lock BERT\'s weights')
-                for p in self.Bert.parameters():
+                for n,p in self.Bert.named_parameters():
+                    #if n != 'bert_model.pooler.dense.weight':
                     p.requires_grad = False
             if 'BERT_LARGE' in self.opt:
                 print('BERT_LARGE')
@@ -223,7 +225,14 @@ class SDNet(nn.Module):
         # Multi-layer RNN
         _, x_rnn_layers = self.context_rnn(x_input, x_mask, return_list=True, x_additional=x_cemb) # layer x batch x x_len x context_rnn_output_size
         _, ques_rnn_layers = self.ques_rnn(ques_input, q_mask, return_list=True, x_additional=ques_cemb) # layer x batch x q_len x ques_rnn_output_size
-
+#        print(ques_input.shape)
+#        for x in x_rnn_layers:
+#            print("taresh kumar sethi")
+#            print(x.shape)
+#        for y in ques_rnn_layers:
+#            print("nikash (null) sethi")
+#            print(y.shape)
+#        sys.exit(0)
         # rnn with question only 
         ques_highlvl = self.high_lvl_ques_rnn(torch.cat(ques_rnn_layers, 2), q_mask) # batch x q_len x high_lvl_ques_rnn_output_size
         ques_rnn_layers.append(ques_highlvl) # (layer + 1) layers

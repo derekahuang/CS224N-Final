@@ -5,7 +5,7 @@ import os
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-from Models.Bert.modeling import BertModel
+from Models.Bert.modeling import BertModel, BertForQuestionAnswering
 
 '''
     BERT    
@@ -29,7 +29,9 @@ class Bert(nn.Module):
             print('Using BERT base model')
             model_file = os.path.join(opt['datadir'], opt['BERT_model_file'])
             print('Loading BERT model from', model_file)
-            self.bert_model = BertModel.from_pretrained(model_file)
+            self.bert_model = BertForQuestionAnswering.from_pretrained(model_file).bert
+            print('Loaded BERT model')
+#            self.bert_model = self.bert_model.bert
             #self.bert_model = BertModel.from_pretrained('bert-base-cased')        
             self.bert_dim = 768
             self.bert_layer = 12
