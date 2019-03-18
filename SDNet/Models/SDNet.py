@@ -12,7 +12,7 @@ from torch.autograd import Variable
 import torch.nn.init as init
 from torch.nn.parameter import Parameter
 from Models.Bert.Bert import Bert
-from Models.Layers import MaxPooling, CNN, dropout, RNN_from_opt, set_dropout_prob, weighted_avg, set_seq_dropout, Attention, DeepAttention, LinearSelfAttn, GetFinalScores
+from Models.Layers import MaxPooling, CNN, dropout, RNN_from_opt, CNN_from_opt, LayeredCNN_from_opt, set_dropout_prob, weighted_avg, set_seq_dropout, Attention, DeepAttention, LinearSelfAttn, GetFinalScores
 from Utils.CoQAUtils import POS, ENT
 
 '''
@@ -65,8 +65,10 @@ class SDNet(nn.Module):
             if 'LOCK_BERT' in self.opt:
                 print('Lock BERT\'s weights')
                 for n,p in self.Bert.named_parameters():
-                    #if n != 'bert_model.pooler.dense.weight':
-                    p.requires_grad = False
+                    if n != 'bert_model.pooler.dense.weight':
+                        p.requires_grad = False
+                    else:
+                        print("unlocked last BERT layer")
             if 'BERT_LARGE' in self.opt:
                 print('BERT_LARGE')
                 bert_dim = 1024
@@ -107,25 +109,50 @@ class SDNet(nn.Module):
 
         addtional_feat = cdim if self.use_contextual else 0
 
+        # nput_size_, output_size_, window_sizes_, dilations_, max_pool_kernel_
+        # 1 layer with window size 3
+        # 1 layer with window size 7
+        # 1 layer with diluted window size 5
+
+        # # Layered CNN context pre-encoder
+        # self.context_pre_cnn, self.context_pre_cnn_size = LayeredCNN_from_opt(x_input_size, 1,
+        #     [3, 7, 5], [1, 1, 2], [1,4])
+        # self.ques_pre_cnn, self.ques_pre_cnn_size = LayeredCNN_from_opt(x_input_size, 1,
+        #     [3, 7, 5], [1, 1, 2], [1,4])
+
         # RNN context encoder
         self.context_rnn, context_rnn_output_size = RNN_from_opt(x_input_size, opt['hidden_size'],
             num_layers=opt['in_rnn_layers'], concat_rnn=opt['concat_rnn'], add_feat=addtional_feat)
         # RNN question encoder
-        self.ques_rnn, ques_rnn_output_size = RNN_from_opt(ques_input_size, opt['hidden_size'],
-            num_layers=opt['in_rnn_layers'], concat_rnn=opt['concat_rnn'], add_feat=addtional_feat)
+        self.ques_cnn, ques_cnn_output_size = CNN_from_opt(ques_input_size, opt['hidden_size']*2, 
+            opt['window_size_cnn'], num_layers=opt['in_cnn_layers'], add_feat=addtional_feat)
 
-        # Output sizes of rnn encoders
-        print('After Input LSTM, the vector_sizes [doc, query] are [', context_rnn_output_size, ques_rnn_output_size, '] *', opt['in_rnn_layers'])
+        # # Output sizes of rnn encoders
+        # print('After Input LSTM, the vector_sizes [doc, query] are [', context_rnn_output_size, ques_rnn_output_size, '] *', opt['in_rnn_layers'])
+
+        # Output sizes of cnn encoders
+        print('After CNN, the vector_sizes [doc, query] are [', context_cnn_output_size, ques_cnn_output_size, '] *', opt['in_rnn_layers'])
+
+        # # Output sizes of cnn encoders
+        # print('After CNN, the vector_sizes [doc, query] are [', context_cnn_output_size, ques_cnn_output_size, '] *', opt['in_cnn_layers'])
 
         # Deep inter-attention
         self.deep_attn = DeepAttention(opt, abstr_list_cnt=opt['in_rnn_layers'], 
             deep_att_hidden_size_per_abstr=opt['deep_att_hidden_size_per_abstr'], correlation_func=3, word_hidden_size=vocab_dim + addtional_feat)
+
+        # # Deep inter-attention
+        # self.deep_attn = DeepAttention(opt, abstr_list_cnt=opt['in_cnn_layers'], 
+        #     deep_att_hidden_size_per_abstr=opt['deep_att_hidden_size_per_abstr'], correlation_func=3, word_hidden_size=vocab_dim + addtional_feat)
         self.deep_attn_input_size = self.deep_attn.rnn_input_size
         self.deep_attn_output_size = self.deep_attn.output_size
 
         # Question understanding and compression
-        self.high_lvl_ques_rnn , high_lvl_ques_rnn_output_size = RNN_from_opt(ques_rnn_output_size * opt['in_rnn_layers'], 
+        self.high_lvl_ques_rnn , high_lvl_ques_rnn_output_size = RNN_from_opt(ques_cnn_output_size * opt['in_rnn_layers'], 
             opt['highlvl_hidden_size'], num_layers = opt['question_high_lvl_rnn_layers'], concat_rnn = True)
+
+        # # Question understanding and compression
+        # self.high_lvl_ques_rnn , high_lvl_ques_rnn_output_size = RNN_from_opt(ques_cnn_output_size * opt['in_cnn_layers'], 
+        #     opt['highlvl_hidden_size'], num_layers = opt['question_high_lvl_rnn_layers'], concat_rnn = True)
 
         self.after_deep_attn_size = self.deep_attn_output_size + self.deep_attn_input_size + addtional_feat + vocab_dim
         self.self_attn_input_size = self.after_deep_attn_size
@@ -222,20 +249,26 @@ class SDNet(nn.Module):
         x_input = torch.cat(x_input_list, 2) # batch x x_len x (vocab_dim + cdim + vocab_dim + pos_dim + ent_dim + feature_dim)
         ques_input = torch.cat(ques_input_list, 2) # batch x q_len x (vocab_dim + cdim)
 
-        # Multi-layer RNN
-        _, x_rnn_layers = self.context_rnn(x_input, x_mask, return_list=True, x_additional=x_cemb) # layer x batch x x_len x context_rnn_output_size
-        _, ques_rnn_layers = self.ques_rnn(ques_input, q_mask, return_list=True, x_additional=ques_cemb) # layer x batch x q_len x ques_rnn_output_size
-#        print(ques_input.shape)
-#        for x in x_rnn_layers:
-#            print("taresh kumar sethi")
-#            print(x.shape)
-#        for y in ques_rnn_layers:
-#            print("nikash (null) sethi")
-#            print(y.shape)
-#        sys.exit(0)
-        # rnn with question only 
+        # # Multi-layer RNN
+        # _, x_rnn_layers = self.context_rnn(x_input, x_mask, return_list=True, x_additional=x_cemb) # layer x batch x x_len x context_rnn_output_size
+        # _, ques_rnn_layers = self.ques_rnn(ques_input, q_mask, return_list=True, x_additional=ques_cemb) # layer x batch x q_len x ques_rnn_output_size
+
+        # Multi-layer CNN
+        _, x_cnn_layers = self.context_cnn(x_input, x_mask, return_list=True, x_additional=x_cemb) # layer x batch x x_len x context_rnn_output_size
+        _, ques_cnn_layers = self.ques_cnn(ques_input, q_mask, return_list=True, x_additional=ques_cemb) # layer x batch x q_len x ques_rnn_output_size
+
+        # for t in x_cnn_layers:
+        #     print (t.shape)
+        # print ('eli')
+
+        # for t in ques_cnn_layers:
+        #     print (t.shape)
+
         ques_highlvl = self.high_lvl_ques_rnn(torch.cat(ques_rnn_layers, 2), q_mask) # batch x q_len x high_lvl_ques_rnn_output_size
         ques_rnn_layers.append(ques_highlvl) # (layer + 1) layers
+
+        # ques_highlvl = self.high_lvl_ques_rnn(torch.cat(ques_cnn_layers, 2), q_mask) # batch x q_len x high_lvl_ques_rnn_output_size
+        # ques_cnn_layers.append(ques_highlvl) # (layer + 1) layers
 
         # deep multilevel inter-attention
         if x_cemb is None:
@@ -246,6 +279,7 @@ class SDNet(nn.Module):
             ques_long = torch.cat([ques_word_embed, ques_cemb], 2) # batch x q_len x (vocab_dim + cdim)
 
         x_rnn_after_inter_attn, x_inter_attn = self.deep_attn([x_long], x_rnn_layers, [ques_long], ques_rnn_layers, x_mask, q_mask, return_bef_rnn=True)
+        # x_rnn_after_inter_attn, x_inter_attn = self.deep_attn([x_long], x_cnn_layers, [ques_long], ques_cnn_layers, x_mask, q_mask, return_bef_rnn=True)
         # x_rnn_after_inter_attn: batch x x_len x deep_attn_output_size
         # x_inter_attn: batch x x_len x deep_attn_input_size
 
@@ -273,6 +307,9 @@ class SDNet(nn.Module):
         # predict scores
         score_s, score_e, score_no, score_yes, score_noanswer = self.get_answer(x_final, ques_merged, x_mask)
         return score_s, score_e, score_no, score_yes, score_noanswer
+
+        # score_s, score_e, score_noanswer = self.get_answer(x_final, ques_merged, x_mask)
+        # return score_s, score_e, score_noanswer
     
     '''
      input: 

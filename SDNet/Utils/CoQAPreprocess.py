@@ -35,7 +35,7 @@ class CoQAPreprocess():
             print('Loading training vocab and vocab char...')
             self.train_vocab, self.train_char_vocab, self.train_embedding = self.load_data()
             self.test_file = os.path.join(opt['datadir'], opt['TEMP_FILE'])
-            if not os.path.exists(os.path.join(self.spacyDir, self.data_prefix + 'real-dev' + '-preprocessed.json')):
+            if not os.path.exists(os.path.join(self.spacyDir, self.data_prefix + 'test' + '-preprocessed.json')):
                 self.preprocess('real-dev') 
             return
 
